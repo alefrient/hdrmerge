@@ -1,32 +1,44 @@
-name: Build hdrmerge for Windows
-on: [push]  # Runs on every push (or change to default branch)
+name: Windows Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: windows-latest  # Uses a Windows VM
-
+    runs-on: windows-latest
+    
     steps:
-      # 1. Checkout the code
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. Install CMake & MinGW
-      - name: Install dependencies
-        run: |
-          choco install cmake -y
-          choco install mingw -y
-
-      # 3. Build hdrmerge
-      - name: Build hdrmerge
-        run: |
-          mkdir build
-          cd build
-          cmake -G "MinGW Makefiles" ..
-          cmake --build .
-
-      # 4. Upload the EXE (FIXED: uses v4 of upload-artifact)
-      - name: Upload hdrmerge.exe
-        uses: actions/upload-artifact@v4  # Updated to v4
-        with:
-          name: hdrmerge.exe
-          path: build/*.exe  # Path to the compiled binary
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install exiv2 libtiff libpng libraw qt5-default
+        
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Create build directory
+      run: mkdir build && cd build
+      
+    - name: Configure with CMake
+      run: cmake .. -G "Visual Studio 17 2022" -A x64
+      
+    - name: Build
+      run: cmake --build . --config Release
+      
+    - name: Package artifacts
+      run: |
+        mkdir artifact
+        copy Release\hdrmerge.exe artifact\
+        copy Release\*.dll artifact\
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: hdrmerge-windows
+        path: artifact/*
