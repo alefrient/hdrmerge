@@ -22,10 +22,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Install dependencies
+    - name: Install Chocolatey packages
       run: |
         choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-        choco install -y exiv2 libtiff libpng libraw qt5-default
+        choco install -y exiv2
+        choco install -y libtiff
+        choco install -y libpng
+        choco install -y LibRaw
+        choco install -y qt-sdk-windows
         
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
