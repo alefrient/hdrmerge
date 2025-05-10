@@ -22,32 +22,40 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Install Chocolatey packages
+    - name: Install build tools
       run: |
         choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-        choco install -y exiv2
-        choco install -y libtiff
-        choco install -y libpng
-        choco install -y LibRaw
-        choco install -y qt-sdk-windows
+        choco install -y visualstudio2022-buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.NativeDesktop --includeRecommended"
         
-    - name: Setup MSVC environment
-      uses: ilammy/msvc-dev-cmd@v1
-      
-    - name: Create build directory
-      run: mkdir build && cd build
-      
+    - name: Install dependencies via vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg install exiv2 libtiff libpng libraw[lcms] qt5-base
+        
+    - name: Setup environment
+      run: |
+        echo "VCPKG_ROOT=$PWD\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "PATH=$PWD\vcpkg\installed\x64-windows\bin;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+        
     - name: Configure with CMake
-      run: cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build-type || 'Release' }}
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+          -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build-type || 'Release' }}
       
     - name: Build
-      run: cmake --build . --config ${{ github.event.inputs.build-type || 'Release' }}
+      run: |
+        cd build
+        cmake --build . --config ${{ github.event.inputs.build-type || 'Release' }} --target install
       
     - name: Package artifacts
       run: |
         mkdir artifact
-        copy ${{ github.event.inputs.build-type || 'Release' }}\hdrmerge.exe artifact\
-        copy ${{ github.event.inputs.build-type || 'Release' }}\*.dll artifact\
+        copy build\${{ github.event.inputs.build-type || 'Release' }}\hdrmerge.exe artifact\
+        copy $env:VCPKG_ROOT\installed\x64-windows\bin\*.dll artifact\
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
