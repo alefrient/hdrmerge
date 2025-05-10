@@ -1,0 +1,21 @@
+name: Build Windows EXE
+on: [push]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          choco install cmake mingw -y
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -G "MinGW Makefiles" ..
+          cmake --build .
+      - name: Upload EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: hdrmerge.exe
+          path: build/*.exe
