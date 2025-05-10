@@ -1,21 +1,32 @@
-name: Build Windows EXE
-on: [push]
+name: Build hdrmerge for Windows
+on: [push]  # Runs on every push (or change to default branch)
+
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Uses a Windows VM
+
     steps:
-      - uses: actions/checkout@v4
+      # 1. Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install CMake & MinGW
       - name: Install dependencies
         run: |
-          choco install cmake mingw -y
-      - name: Build
+          choco install cmake -y
+          choco install mingw -y
+
+      # 3. Build hdrmerge
+      - name: Build hdrmerge
         run: |
           mkdir build
           cd build
           cmake -G "MinGW Makefiles" ..
           cmake --build .
-      - name: Upload EXE
-        uses: actions/upload-artifact@v3
+
+      # 4. Upload the EXE (FIXED: uses v4 of upload-artifact)
+      - name: Upload hdrmerge.exe
+        uses: actions/upload-artifact@v4  # Updated to v4
         with:
           name: hdrmerge.exe
-          path: build/*.exe
+          path: build/*.exe  # Path to the compiled binary
