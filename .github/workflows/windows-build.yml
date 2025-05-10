@@ -1,16 +1,16 @@
 name: Windows Build
 
 on:
-  workflow_dispatch:    # Allows manual triggering
+  workflow_dispatch:
     inputs:
       build-type:
-        description: 'Build type (Release/Debug)'
+        description: 'Build type'
         required: true
         default: 'Release'
         type: choice
         options:
-        - Release
-        - Debug
+          - Release
+          - Debug
   push:
     branches: [ main ]
 
@@ -46,7 +46,8 @@ jobs:
         copy ${{ github.event.inputs.build-type || 'Release' }}\*.dll artifact\
         
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: hdrmerge-windows-${{ github.event.inputs.build-type || 'Release' }}
+        name: hdrmerge-windows
         path: artifact/*
+        if-no-files-found: error
