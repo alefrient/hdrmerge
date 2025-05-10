@@ -28,7 +28,13 @@ jobs:
     - name: Install CMake
       run: choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
       
-    - name: Setup vcpkg
+    - name: Clean vcpkg environment
+      run: |
+        # Clear any existing vcpkg environment variables
+        reg delete "HKCU\Environment" /v "VCPKG_ROOT" /f 2>nul || true
+        setx VCPKG_ROOT ""
+      
+    - name: Setup fresh vcpkg
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
@@ -40,10 +46,11 @@ jobs:
       shell: cmd
       run: |
         vcpkg\vcpkg install ^
+          --vcpkg-root="%cd%\vcpkg" ^
           exiv2:x64-windows ^
           tiff:x64-windows ^
           libpng:x64-windows ^
-          libraw:x64-windows[lcms] ^
+          "libraw[lcms]:x64-windows" ^
           qt5-base:x64-windows
         
     - name: Configure build
