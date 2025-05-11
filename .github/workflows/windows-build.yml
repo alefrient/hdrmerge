@@ -32,35 +32,36 @@ jobs:
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
-        git pull # Get latest version
         .\bootstrap-vcpkg.bat -disableMetrics
         cd ..
         
     - name: Install dependencies
       shell: cmd
       run: |
-        vcpkg\vcpkg install ^
-          --vcpkg-root="%cd%\vcpkg" ^
+        call vcpkg\vcpkg install ^
           exiv2:x64-windows ^
           tiff:x64-windows ^
           libpng:x64-windows ^
-          libraw:x64-windows ^  # Removed [lcms] feature
+          libraw:x64-windows ^
           qt5-base:x64-windows
         
     - name: Configure build
+      shell: cmd
       run: |
         mkdir build
         cd build
         cmake .. -G "Visual Studio 17 2022" -A x64 ^
-          -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
+          -DCMAKE_TOOLCHAIN_FILE="%cd%\..\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
           -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build-type || 'Release' }}
       
     - name: Build project
+      shell: cmd
       run: |
         cd build
         cmake --build . --config ${{ github.event.inputs.build-type || 'Release' }} --target install
       
     - name: Package artifacts
+      shell: cmd
       run: |
         mkdir artifact
         copy build\${{ github.event.inputs.build-type || 'Release' }}\hdrmerge.exe artifact\
