@@ -28,18 +28,12 @@ jobs:
     - name: Install CMake
       run: choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
       
-    - name: Clean vcpkg environment
-      run: |
-        # Clear any existing vcpkg environment variables
-        reg delete "HKCU\Environment" /v "VCPKG_ROOT" /f 2>nul || true
-        setx VCPKG_ROOT ""
-      
-    - name: Setup fresh vcpkg
+    - name: Setup vcpkg
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
-        git checkout 2024.06.12
-        .\bootstrap-vcpkg.bat
+        git pull # Get latest version
+        .\bootstrap-vcpkg.bat -disableMetrics
         cd ..
         
     - name: Install dependencies
@@ -50,7 +44,7 @@ jobs:
           exiv2:x64-windows ^
           tiff:x64-windows ^
           libpng:x64-windows ^
-          "libraw[lcms]:x64-windows" ^
+          libraw:x64-windows ^  # Removed [lcms] feature
           qt5-base:x64-windows
         
     - name: Configure build
