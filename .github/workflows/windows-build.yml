@@ -45,11 +45,17 @@ jobs:
           libraw:x64-windows ^
           qt5-base:x64-windows
         
-    - name: Download ALGLIB
+    - name: Download and setup ALGLIB
       shell: cmd
       run: |
-        curl -L https://www.alglib.net/translator/re/alglib-3.19.0.cpp.zip -o alglib.zip
-        7z x alglib.zip -oalglib
+        mkdir alglib
+        curl -L https://www.alglib.net/translator/re/alglib-3.19.0.cpp.zip -o alglib.zip || (
+          echo "Failed to download ALGLIB, trying alternative source..."
+          curl -L https://github.com/HDRMerge/hdrmerge/releases/download/alglib/alglib-3.19.0.cpp.zip -o alglib.zip
+        )
+        tar -xf alglib.zip -C alglib || (
+          7z x alglib.zip -oalglib -y
+        )
         dir alglib
         
     - name: Configure build
@@ -58,26 +64,3 @@ jobs:
         mkdir build
         cd build
         cmake .. -G "Visual Studio 17 2022" -A x64 ^
-          -DCMAKE_TOOLCHAIN_FILE="%cd%\..\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
-          -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build-type || 'Release' }} ^
-          -DALGLIB_ROOT="%cd%\..\alglib"
-      
-    - name: Build project
-      shell: cmd
-      run: |
-        cd build
-        cmake --build . --config ${{ github.event.inputs.build-type || 'Release' }} --target install
-      
-    - name: Package artifacts
-      shell: cmd
-      run: |
-        mkdir artifact
-        copy build\${{ github.event.inputs.build-type || 'Release' }}\hdrmerge.exe artifact\
-        copy vcpkg\installed\x64-windows\bin\*.dll artifact\
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: hdrmerge-windows-${{ github.event.inputs.build-type || 'Release' }}
-        path: artifact/*
-        if-no-files-found: error
